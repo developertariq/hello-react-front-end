@@ -1,53 +1,36 @@
+import { createAsyncThunk, createSlice } from '@reduxjs/toolkit';
 import axios from 'axios';
-
-const GET_RANDOM_GREETING_SUCCESS = 'GET_RANDOM_GREETING_SUCCESS';
-const GET_RANDOM_GREETING_FAILURE = 'GET_RANDOM_GREETING_FAILURE';
-
-function getRandomGreetingSuccess(greeting) {
-  return {
-    type: GET_RANDOM_GREETING_SUCCESS,
-    greeting
-  };
-}
-
-function getRandomGreetingFailure(error) {
-  return {
-    type: GET_RANDOM_GREETING_FAILURE,
-    error
-  };
-}
 
 const initialState = {
   greeting: '',
-  error: null
+  status: '',
+  error: null,
 };
 
-export function getRandomGreeting() {
-  return async function(dispatch) {
-    try {
-      const response = await axios.get('/api');
-      dispatch(getRandomGreetingSuccess(response.data.message));
-    } catch (error) {
-      dispatch(getRandomGreetingFailure(error));
-    }
-  };
-}
+const FETCH_URL = 'http://localhost:3000/api';
 
-export default function greetingsReducer(state = initialState, action) {
-  switch (action.type) {
-    case GET_RANDOM_GREETING_SUCCESS:
-      return {
+export const getRandomGreeting = createAsyncThunk('greeting/message/FETCH_DATA', async () => {
+  const response = await axios.get(FETCH_URL);
+  return response.data.message;
+});
+
+const greetingsSlice = createSlice({
+  name: 'greetings',
+  initialState,
+  reducers: {},
+  extraReducers: (builder) => {
+    builder
+      .addCase(getRandomGreeting.fulfilled, (state, action) => ({
         ...state,
-        greeting: action.greeting,
-        error: null
-      };
-    case GET_RANDOM_GREETING_FAILURE:
-      return {
+        status: 'succeeded',
+        greeting: action.payload,
+      }))
+      .addCase(getRandomGreeting.rejected, (state, action) => ({
         ...state,
-        greeting: '',
-        error: action.error
-      };
-    default:
-      return state;
-  }
-}
+        status: 'failed',
+        error: action.error.message,
+      }));
+  },
+});
+
+export default greetingsSlice.reducer;
